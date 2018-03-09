@@ -241,7 +241,7 @@ def publish_summary_tweet():
 
 if __name__ == '__main__':
     while True:
-        result = GoogleSearch().search(patterns[random.randint(0, 14)], num_results=100)
+        result = GoogleSearch().search(random.choice(patterns), num_results=100)
         parse_google_web_search(result)
 
         publish_summary_tweet()
