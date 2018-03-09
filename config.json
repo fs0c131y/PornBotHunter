@@ -1,0 +1,27 @@
+{
+    "consumer_key": "key",
+    "consumer_secret": "secret",
+    "access_token": "token",
+    "access_secret": "secret",
+    "pastebin_dev_key": "key",
+    "temp_file": "temp.jpg",
+    "delay_between_publication": 3600,
+    "patterns": [
+        "Twerk dancer/Fitness lover",
+        "Cosplay master \\ Travel lover",
+        "Cosplay master/Travel lover",
+        "Cosplay master \\\\ Travel lover",
+        "Cosplay master // MARVEL fan",
+        "Cosplay fan // MARVEL fan",
+        "Sweet lady. Dancing \\\\ DC fan",
+        "Sweet lady. Twerk dancer. Cats lover",
+        "Pretty girl. Dancing. Fitness",
+        "Actress \\\\ Travel",
+        "Costume designer // Dogs lover",
+        "Gamer / Dogs lover",
+        "Cute girl. Cosplay fan/MARVEL fan",
+        "Humble girl. Cosplayer/DC fan",
+        "Simple girl. Gamer \\ Traveler",
+        "Voice actress. Dogs lover"
+    ]
+}
