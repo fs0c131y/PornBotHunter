@@ -224,7 +224,7 @@ def publish_summary_tweet():
     pbin = PastebinPython(api_dev_key=PASTEBIN_DEV_KEY)
 
     try:
-        pbin.createAPIUserKey('fs0c131y', 'azerazer')
+        pbin.createAPIUserKey('', '')
         now = datetime.datetime.now()
         url = pbin.createPaste(paste_content, 'Detected bots by @PornBotHunter ' + str(now.day) + "/" +
                                str(now.month) + "/" + str(now.year), FORMAT_NONE, PASTE_PUBLIC,
