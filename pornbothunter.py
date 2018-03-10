@@ -37,7 +37,6 @@ def parse_google_web_search(search_result):
     search_result : String[]
         Google web search result
     """
-
     for result_item in search_result.results:
         pseudo = result_item.url.split("/")[3]
         if pseudo not in pseudos:
@@ -223,7 +222,8 @@ def init():
 if __name__ == '__main__':
     patterns = init();
     while True:
-        result = GoogleSearch().search("site:twitter.com \"" + random.choice(patterns) + "\"", num_results=100)
+        search_text = "{}{}{}".format('site:twitter.com "', random.choice(patterns), '"')
+        result = GoogleSearch().search(search_text, num_results=100)
         parse_google_web_search(result)
 
         publish_summary_tweet()
