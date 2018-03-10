@@ -4,6 +4,8 @@
     "access_token": "token",
     "access_secret": "secret",
     "pastebin_dev_key": "key",
+    "pastebin_username": "username",
+    "pastebin_password": "password",
     "temp_file": "temp.jpg",
     "delay_between_publication": 3600,
     "patterns": [

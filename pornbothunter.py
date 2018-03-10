@@ -198,7 +198,7 @@ def publish_summary_tweet():
     pbin = PastebinPython(api_dev_key=data["pastebin_dev_key"])
 
     try:
-        pbin.createAPIUserKey('', '')
+        pbin.createAPIUserKey(data["pastebin_username"], data["pastebin_password"])
         now = datetime.datetime.now()
         url = pbin.createPaste(paste_content, 'Detected bots by @PornBotHunter ' + str(now.day) + "/" +
                                str(now.month) + "/" + str(now.year), FORMAT_NONE, PASTE_PUBLIC,
@@ -213,14 +213,11 @@ def publish_summary_tweet():
         print e
 
 
-def init():
+if __name__ == '__main__':
     auth = tweepy.OAuthHandler(data["consumer_key"], data["consumer_secret"])
     auth.set_access_token(data["access_token"], data["access_secret"])
     api = tweepy.API(auth)
-    return data["patterns"]
-
-if __name__ == '__main__':
-    patterns = init();
+    patterns = data["patterns"]
     while True:
         search_text = "{}{}{}".format('site:twitter.com "', random.choice(patterns), '"')
         result = GoogleSearch().search(search_text, num_results=100)
