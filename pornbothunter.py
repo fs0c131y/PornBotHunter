@@ -14,7 +14,9 @@ import requests
 import time
 import tweepy
 import urllib
+import urllib2
 import json
+import sys
 
 from bs4 import BeautifulSoup
 from googlesearch.googlesearch import GoogleSearch
@@ -218,8 +220,12 @@ if __name__ == '__main__':
     api = tweepy.API(auth)
     patterns = data["patterns"]
     while True:
-        search_text = "{}{}{}".format('site:twitter.com "', random.choice(patterns), '"')
-        result = GoogleSearch().search(search_text, num_results=100)
+        search_text = 'site:twitter.com "{}"'.format(random.choice(patterns))
+        try:
+            result = GoogleSearch().search(search_text, num_results=100)
+        except urllib2.HTTPError as httperr:
+            print("{}. Google has detected an automated search.".format(httperr))
+            sys.exit()
         parse_google_web_search(result)
 
         publish_summary_tweet()
