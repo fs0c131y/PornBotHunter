@@ -24,9 +24,7 @@ from pastebin_python.pastebin_constants import PASTE_PUBLIC, EXPIRE_NEVER
 from pastebin_python.pastebin_formats import FORMAT_NONE
 from StringIO import StringIO
 
-data = json.load(open('config.json'))
 pseudos = []
-patterns = []
 
 def parse_google_web_search(search_result):
     """
@@ -214,6 +212,7 @@ def publish_summary_tweet():
 
 
 if __name__ == '__main__':
+    data = json.load(open('config.json'))
     auth = tweepy.OAuthHandler(data["consumer_key"], data["consumer_secret"])
     auth.set_access_token(data["access_token"], data["access_secret"])
     api = tweepy.API(auth)
