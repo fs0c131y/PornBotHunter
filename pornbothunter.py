@@ -14,6 +14,9 @@ import requests
 import time
 import tweepy
 import urllib
+import urllib2
+import json
+import sys
 
 from bs4 import BeautifulSoup
 from googlesearch.googlesearch import GoogleSearch
@@ -21,37 +24,9 @@ from pastebin_python import PastebinPython
 from pastebin_python.pastebin_exceptions import PastebinBadRequestException, PastebinFileException
 from pastebin_python.pastebin_constants import PASTE_PUBLIC, EXPIRE_NEVER
 from pastebin_python.pastebin_formats import FORMAT_NONE
-from secrets import *
 from StringIO import StringIO
 
-auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_secret)
-api = tweepy.API(auth)
-
 pseudos = []
-patterns = [
-    'site:twitter.com "Twerk dancer/Fitness lover"',
-    'site:twitter.com "Cosplay master \\ Travel lover"',
-    'site:twitter.com "Cosplay master/Travel lover"',
-    'site:twitter.com "Cosplay master \\\\ Travel lover"',
-    'site:twitter.com "Cosplay master // MARVEL fan"',
-    'site:twitter.com "Cosplay fan // MARVEL fan"',
-    'site:twitter.com "Sweet lady. Dancing \\\\ DC fan"',
-    'site:twitter.com "Sweet lady. Twerk dancer. Cats lover"',
-    'site:twitter.com "Pretty girl. Dancing. Fitness"',
-    'site:twitter.com "Actress \\\\ Travel"',
-    'site:twitter.com "Costume designer // Dogs lover"',
-    'site:twitter.com "Gamer / Dogs lover"',
-    'site:twitter.com "Cute girl. Cosplay fan/MARVEL fan"',
-    'site:twitter.com "Humble girl. Cosplayer/DC fan"',
-    'site:twitter.com "Simple girl. Gamer \ Traveler"',
-    'site:twitter.com "Voice actress. Dogs lover'
-]
-
-TEMP_FILE = 'temp.jpg'
-DELAY_BETWEEN_PUBLICATION = 3600
-PASTEBIN_DEV_KEY = ''
-
 
 def parse_google_web_search(search_result):
     """
@@ -62,7 +37,6 @@ def parse_google_web_search(search_result):
     search_result : String[]
         Google web search result
     """
-
     for result_item in search_result.results:
         pseudo = result_item.url.split("/")[3]
         if pseudo not in pseudos:
@@ -93,9 +67,9 @@ def publish_tweet(pseudo):
         description_link = get_link_description(user.description)
         if description_link:
             message = message + "\nBio link: " + description_link
-        api.update_with_media(TEMP_FILE, status=message)
+        api.update_with_media(data["temp_file"], status=message)
 
-        os.remove(TEMP_FILE)
+        os.remove(data["temp_file"])
 
         return True
     else:
@@ -120,7 +94,7 @@ def download_image(profile_picture_url):
 
     request = requests.get(profile_picture_url, stream=True)
     if request.status_code == 200:
-        with open(TEMP_FILE, 'wb') as image:
+        with open(data["temp_file"], 'wb') as image:
             for chunk in request:
                 image.write(chunk)
             return True
@@ -221,10 +195,10 @@ def publish_summary_tweet():
         paste_content = paste_content + "\n@" + name
 
     # Pastebin client
-    pbin = PastebinPython(api_dev_key=PASTEBIN_DEV_KEY)
+    pbin = PastebinPython(api_dev_key=data["pastebin_dev_key"])
 
     try:
-        pbin.createAPIUserKey('', '')
+        pbin.createAPIUserKey(data["pastebin_username"], data["pastebin_password"])
         now = datetime.datetime.now()
         url = pbin.createPaste(paste_content, 'Detected bots by @PornBotHunter ' + str(now.day) + "/" +
                                str(now.month) + "/" + str(now.year), FORMAT_NONE, PASTE_PUBLIC,
@@ -240,12 +214,22 @@ def publish_summary_tweet():
 
 
 if __name__ == '__main__':
+    data = json.load(open('config.json'))
+    auth = tweepy.OAuthHandler(data["consumer_key"], data["consumer_secret"])
+    auth.set_access_token(data["access_token"], data["access_secret"])
+    api = tweepy.API(auth)
+    patterns = data["patterns"]
     while True:
-        result = GoogleSearch().search(random.choice(patterns), num_results=100)
+        search_text = 'site:twitter.com "{}"'.format(random.choice(patterns))
+        try:
+            result = GoogleSearch().search(search_text, num_results=100)
+        except urllib2.HTTPError as httperr:
+            print("{}. Google has detected an automated search.".format(httperr))
+            sys.exit()
         parse_google_web_search(result)
 
         publish_summary_tweet()
-        time.sleep(DELAY_BETWEEN_PUBLICATION)
+        time.sleep(data["delay_between_publication"])
 
         for name in pseudos:
             url = get_profile_picture_url("https://twitter.com/" + name)
@@ -253,4 +237,4 @@ if __name__ == '__main__':
                 google_image_search(url)
 
             publish_tweet(name)
-            time.sleep(DELAY_BETWEEN_PUBLICATION)
+            time.sleep(data["delay_between_publication"])
