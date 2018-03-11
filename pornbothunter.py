@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# encoding: utf-8
+#!/usr/bin/env python3
 
 """
 Twitter Porn bot hunter
@@ -8,21 +7,20 @@ Twitter Porn bot hunter
 import datetime
 import os
 import pycurl
-import re
 import random
-import requests
+import re
 import time
-import tweepy
-import urllib
+from io import BytesIO
+from urllib.error import URLError
+from urllib.parse import urlencode
+from urllib.request import urlopen
 
+import requests
+import tweepy
 from bs4 import BeautifulSoup
 from googlesearch.googlesearch import GoogleSearch
-from pastebin_python import PastebinPython
-from pastebin_python.pastebin_exceptions import PastebinBadRequestException, PastebinFileException
-from pastebin_python.pastebin_constants import PASTE_PUBLIC, EXPIRE_NEVER
-from pastebin_python.pastebin_formats import FORMAT_NONE
+
 from secrets import *
-from StringIO import StringIO
 
 auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_secret)
@@ -50,7 +48,44 @@ patterns = [
 
 TEMP_FILE = 'temp.jpg'
 DELAY_BETWEEN_PUBLICATION = 3600
-PASTEBIN_DEV_KEY = ''
+
+
+def paste(content, title, key):
+    """
+    Create a paste on https://pastebin.com
+
+    Parameters
+    ----------
+    content: String
+        Body of the paste
+
+    title: String
+        Title of the paste
+
+    key: String
+        The API dev key from https://pastebin.com
+
+    Returns
+    -------
+    Optional[String]
+        The URL of the paste if successful, None otherwise
+    """
+
+    options = {
+        'api_dev_key': key,
+        'api_option': 'paste',
+        'api_paste_name': title,
+        'api_paste_code': content,
+        'api_paste_private': 0
+    }
+
+    try:
+        response = urlopen('http://pastebin.com/api/api_post.php',
+                           urlencode(options).encode('utf-8'))
+
+        return response.read()
+    except (URLError, Exception):
+        return None
 
 
 def parse_google_web_search(search_result):
@@ -64,19 +99,20 @@ def parse_google_web_search(search_result):
     """
 
     for result_item in search_result.results:
-        pseudo = result_item.url.split("/")[3]
-        if pseudo not in pseudos:
-            pseudos.insert(0, pseudo)
-            print("pseudo: " + pseudo + ", length: " + str(len(pseudos)))
+        handle = result_item.url.split("/")[3]
+
+        if handle not in pseudos:
+            pseudos.insert(0, handle)
+            print("pseudo: {}, length: {}".format(handle, len(pseudos)))
 
 
-def publish_tweet(pseudo):
+def publish_tweet(handle):
     """
     Publish a tweet.
 
     Parameters
     ----------
-    pseudo : String
+    handle : String
         pseudo of the bot
 
     Returns
@@ -85,12 +121,19 @@ def publish_tweet(pseudo):
         True if the tweet had been published, otherwise False
     """
 
-    profile_url = get_profile_picture_url("https://twitter.com/" + pseudo)
+    profile_url = get_profile_picture_url("https://twitter.com/{}".format(
+        handle))
+
     if profile_url and download_image(profile_url):
-        user = api.get_user(name)
-        message = "Pseudo: " + pseudo + "\nFollowers: " + str(user.followers_count) + "\nFollowing: " \
-                  + str(user.friends_count) + "\nCreated at: " + str(user.created_at)
+        user = api.get_user(handle)
+        message = ("Pseudo: {}"
+                   "\nFollowers: {}"
+                   "\nFollowing: {}"
+                   "\nCreated at: {}").format(handle, user.followers_count,
+                                              user.friends_count,
+                                              user.created_at)
         description_link = get_link_description(user.description)
+
         if description_link:
             message = message + "\nBio link: " + description_link
         api.update_with_media(TEMP_FILE, status=message)
@@ -99,7 +142,7 @@ def publish_tweet(pseudo):
 
         return True
     else:
-        message = "Pseudo: " + pseudo + "\nStatus: suspended"
+        message = "Pseudo: " + handle + "\nStatus: suspended"
         api.update_status(message)
 
 
@@ -119,6 +162,7 @@ def download_image(profile_picture_url):
     """
 
     request = requests.get(profile_picture_url, stream=True)
+
     if request.status_code == 200:
         with open(TEMP_FILE, 'wb') as image:
             for chunk in request:
@@ -140,17 +184,20 @@ def get_profile_picture_url(profile_url):
 
     Returns
     -------
-    String
-        Profile picture URL
+    Optional[String]
+        Profile picture URL otherwise None
     """
 
     url_re = re.compile(r"https://pbs.twimg.com/profile_images/.*?jpg")
 
-    page = urllib.urlopen(profile_url)
+    page = urlopen(profile_url)
+
     if page:
-        html = page.read()
+        html = page.read().decode('utf-8')
+
         if html:
             profile_picture_url = url_re.findall(html)
+
             if profile_picture_url:
                 return profile_picture_url[0]
 
@@ -166,12 +213,14 @@ def get_link_description(description):
 
     Returns
     -------
-    String
-        HTTP link in the description
+    Optional[String]
+        HTTP link in the description otherwise None
     """
 
-    url_re = re.compile('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+    url_re = re.compile(("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]"
+                         "|[!*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"))
     link_description = url_re.findall(description)
+
     if link_description:
         return link_description[0]
 
@@ -188,26 +237,30 @@ def google_image_search(image_url):
 
     search_url = 'https://www.google.com/searchbyimage?&image_url='
 
-    returned_code = StringIO()
+    buffer = BytesIO()
     full_url = search_url + image_url + '&q=site:twitter.com&intitle:"(@"'
 
     conn = pycurl.Curl()
     conn.setopt(conn.URL, str(full_url))
     conn.setopt(conn.FOLLOWLOCATION, 1)
-    conn.setopt(conn.USERAGENT, 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11'
-                                ' (KHTML, like Gecko) Chrome/23.0.1271.97 Safari/537.11')
-    conn.setopt(conn.WRITEFUNCTION, returned_code.write)
+    conn.setopt(conn.USERAGENT,
+                'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11'
+                ' (KHTML, like Gecko) Chrome/23.0.1271.97 Safari/537.11')
+    conn.setopt(conn.WRITEFUNCTION, buffer.write)
     conn.perform()
     conn.close()
 
-    soup = BeautifulSoup(returned_code.getvalue(), 'html.parser')
+    soup = BeautifulSoup(buffer.getvalue().decode('utf-8'), 'html.parser')
+
     for div in soup.findAll('div', attrs={'class': 'rc'}):
-        sLink = div.find('a')
-        if 'status' not in sLink:
-            pseudo = sLink['href'].split("/")[3]
-            if pseudo not in pseudos:
-                pseudos.append(pseudo)
-                print("pseudo: " + pseudo + ", length: " + str(len(pseudos)))
+        s_link = div.find('a')
+
+        if 'status' not in s_link:
+            handle = s_link['href'].split("/")[3]
+
+            if handle not in pseudos:
+                pseudos.append(handle)
+                print("pseudo: {}, length: {}".format(handle, len(pseudos)))
 
 
 def publish_summary_tweet():
@@ -217,26 +270,21 @@ def publish_summary_tweet():
 
     # Create the pastebin content
     paste_content = "Detected Twitter porn bots by @PornBotHunter:"
+
     for name in pseudos:
-        paste_content = paste_content + "\n@" + name
+        paste_content += "\n@{}".format(name)
 
-    # Pastebin client
-    pbin = PastebinPython(api_dev_key=PASTEBIN_DEV_KEY)
+    now = datetime.datetime.now()
+    title = "Detected bots by @PornBotHunter {}".format(
+        now.strftime("%d/%m/%Y"))
 
-    try:
-        pbin.createAPIUserKey('', '')
-        now = datetime.datetime.now()
-        url = pbin.createPaste(paste_content, 'Detected bots by @PornBotHunter ' + str(now.day) + "/" +
-                               str(now.month) + "/" + str(now.year), FORMAT_NONE, PASTE_PUBLIC,
-                               EXPIRE_NEVER)
+    pbin_url = paste(paste_content, title, pastebin_dev_key)
 
-        message = "Currently, @PornBotHunter detected " + str(len(pseudos)) + " #Twitter #porn #bots." \
-                                                                              " Detailed list is available here: " + url
+    if pbin_url:
+        message = ("Currently, @PornBotHunter detected {} #Twitter #porn #bots."
+                   "Detailed list is available here: {}").format(len(pseudos),
+                                                                 pbin_url)
         api.update_status(message)
-    except PastebinBadRequestException as e:
-        print e
-    except PastebinFileException as e:
-        print e
 
 
 if __name__ == '__main__':
@@ -247,10 +295,12 @@ if __name__ == '__main__':
         publish_summary_tweet()
         time.sleep(DELAY_BETWEEN_PUBLICATION)
 
-        for name in pseudos:
-            url = get_profile_picture_url("https://twitter.com/" + name)
+        for pseudo in pseudos:
+            url = get_profile_picture_url("https://twitter.com/{}".format(
+                pseudo))
+
             if url:
                 google_image_search(url)
 
-            publish_tweet(name)
+            publish_tweet(pseudo)
             time.sleep(DELAY_BETWEEN_PUBLICATION)
