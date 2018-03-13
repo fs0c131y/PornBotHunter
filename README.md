@@ -2,7 +2,7 @@
 @PornBotHunter publishes a detected Twitter porn bot every hour https://twitter.com/PornBotHunter
 
 ## How to run it
-In order to run it properly you need to replace the `consumer_key`, `consumer_secret`, `access_token`, `access_secret` in **secrets.py**. You also need to replace `PASTEBIN_DEV_KEY` and the pastebin credentials in pornbothunter.py
+In order to run it properly you need to replace the `consumer_key`, `consumer_secret`, `access_token`, `access_secret` and `pastebin_dev_key` in **secrets.py**.
 
 ## How to contribute
 I'm far from being a Python expert, contributions are more than welcome!

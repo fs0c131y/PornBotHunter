@@ -1,5 +1,7 @@
-pornbothunter.pygoogle-search==1.0.2
+# For Python3 compatibility
+# PR: https://github.com/anthonyhseb/googlesearch/pull/5
+git+git://github.com/notmikeb/googlesearch.git
 requests==2.18.4
 tweepy==3.5.0
 pycurl==7.43.0
-pastebin_python==1.2
+beautifulsoup4==4.4.0
