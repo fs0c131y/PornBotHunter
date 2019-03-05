@@ -8,4 +8,4 @@ In order to run it properly you need to replace the `consumer_key`, `consumer_se
 I'm far from being a Python expert, contributions are more than welcome!
 
 ## Contact
-You can contact me on Twitter @fs0c131y or by e-mail fs0c1311@gmail.com
+You can contact me on Twitter @fs0c131y
