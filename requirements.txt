@@ -1,7 +1,5 @@
-# For Python3 compatibility
-# PR: https://github.com/anthonyhseb/googlesearch/pull/5
 git+git://github.com/notmikeb/googlesearch.git
-requests==2.18.4
-tweepy==3.5.0
-pycurl==7.43.0
-beautifulsoup4==4.4.0
+requests
+tweepy
+pycurl
+beautifulsoup4
