@@ -1,5 +1,5 @@
 # PornBotHunter
-@PornBotHunter publishes a detected Twitter porn bot every hour https://twitter.com/PornBotHunter
+[@PornBotHunter](https://twitter.com/PornBotHunter) publishes a detected Twitter porn bot every hour
 
 ## How to run it
 In order to run it properly you need to replace the `consumer_key`, `consumer_secret`, `access_token`, `access_secret` and `pastebin_dev_key` in **secrets.py**.
